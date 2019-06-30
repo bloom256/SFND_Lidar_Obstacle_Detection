@@ -86,7 +86,7 @@ private:
 		else
 		{
 			float distSquared = distanceSquared(target, node->point);
-			if (distSquared < (distanceTol * distanceTol))
+			if (distSquared <= (distanceTol * distanceTol))
 				nearbyPoints.push_back(node->id);
 
 			searchHelper(target, distanceTol, nearbyPoints, node->left, level + 1);
