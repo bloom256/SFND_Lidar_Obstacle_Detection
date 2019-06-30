@@ -27,24 +27,20 @@ struct KdTree
 
 	void insert(std::vector<float> point, int id)
 	{
-		// TODO: Fill in this function to insert a new point into the tree
-		// the function should create a new node and place correctly with in the root 
-		inseertHelper(point, id, true, root);
+		insertHelper(point, id, root, 0);
 	}
 
 	// return a list of point ids in the tree that are within distance of target
 	std::vector<int> search(std::vector<float> target, float distanceTol)
 	{
-		std::cout << "kd-tree serach: [" << target[0] << "," << target[1] << "] " << " dist " << distanceTol << std::endl;
 		std::vector<int> ids;
-		searchHelper(target, distanceTol, ids, true, root);
-		std::cout << "kd-tree serach: " << ids.size() << " points found" << std::endl;
+		searchHelper(target, distanceTol, ids, root, 0);
 		return ids;
 	}
 	
 private:
 
-	void inseertHelper(std::vector<float> point, int id, bool xSplit, Node *& node)
+	void insertHelper(const std::vector<float> & point, int id, Node *& node, size_t level)
 	{
 		if (!node)
 		{
@@ -52,80 +48,49 @@ private:
 			return;
 		}
 
-		if (xSplit)
-		{
-			if (point[0] <= node->point[0])
-				inseertHelper(point, id, !xSplit, node->left);
-			else
-				inseertHelper(point, id, !xSplit, node->right);
-		}
+		size_t i = level % point.size();
+		if (point[i] <= node->point[i])
+			insertHelper(point, id, node->left, level + 1);
 		else
-		{
-			if (point[1] <= node->point[1])
-				inseertHelper(point, id, !xSplit, node->left);
-			else
-				inseertHelper(point, id, !xSplit, node->right);
-		}
+			insertHelper(point, id, node->right, level + 1);
+
 	}
 
-	void searchHelper(std::vector<float> target, float distanceTol, std::vector<int> & nearbyPoints, bool xSplit, Node * node)
+	float distanceSquared(const std::vector<float> & p1, const std::vector<float> & p2)
+	{
+		assert(p1.size() == p2.size());
+		float d = 0;
+		for (size_t i = 0; i < p1.size(); i++)
+		{
+			float delta = p1[i] - p2[i];
+			d += delta * delta;
+		}
+		return d;
+	}
+
+	void searchHelper(const std::vector<float> & target, float distanceTol, std::vector<int> & nearbyPoints, Node * node, size_t level)
 	{
 		if (!node)
 			return;
 
-		cout << "searchHelper: node " << node->id << " [" << node->point[0] << "," << node->point[1] << "]" << " xSplit " << xSplit << std::endl;
+		size_t i = level % target.size();
 
-		if (xSplit)
+		if ((target[i] + distanceTol) < node->point[i])
 		{
-			if ((target[0] + distanceTol) < node->point[0])
-			{
-				//std::cout << "1" << std::endl;
-				searchHelper(target, distanceTol, nearbyPoints, !xSplit, node->left);
-			}
-			else if ((target[0] - distanceTol) > node->point[0])
-			{
-				//std::cout << "2" << std::endl;
-				searchHelper(target, distanceTol, nearbyPoints, !xSplit, node->right);
-			}
-			else
-			{
-				//std::cout << "3" << std::endl;
-				float dist = (Eigen::Vector3f(target[0], target[1], 0) - Eigen::Vector3f(node->point[0], node->point[1], 0)).norm();
-				if (dist < distanceTol)
-				{
-					std::cout << "hit" << std::endl;
-					nearbyPoints.push_back(node->id);
-				}
-
-				searchHelper(target, distanceTol, nearbyPoints, !xSplit, node->left);
-				searchHelper(target, distanceTol, nearbyPoints, !xSplit, node->right);
-			}
+			searchHelper(target, distanceTol, nearbyPoints, node->left, level + 1);
+		}
+		else if ((target[i] - distanceTol) > node->point[i])
+		{
+			searchHelper(target, distanceTol, nearbyPoints, node->right, level + 1);
 		}
 		else
 		{
-			if ((target[1] + distanceTol) < node->point[1])
-			{
-				//std::cout << "4" << std::endl;
-				searchHelper(target, distanceTol, nearbyPoints, !xSplit, node->left);
-			}
-			else if ((target[1] - distanceTol) > node->point[1])
-			{
-				//std::cout << "5" << std::endl;
-				searchHelper(target, distanceTol, nearbyPoints, !xSplit, node->right);
-			}
-			else
-			{
-				//std::cout << "6" << std::endl;
-				float dist = (Eigen::Vector3f(target[0], target[1], 0) - Eigen::Vector3f(node->point[0], node->point[1], 0)).norm();
-				if (dist < distanceTol)
-				{
-					std::cout << "hit" << std::endl;
-					nearbyPoints.push_back(node->id);
-				}
+			float distSquared = distanceSquared(target, node->point);
+			if (distSquared < (distanceTol * distanceTol))
+				nearbyPoints.push_back(node->id);
 
-				searchHelper(target, distanceTol, nearbyPoints, !xSplit, node->left);
-				searchHelper(target, distanceTol, nearbyPoints, !xSplit, node->right);
-			}
+			searchHelper(target, distanceTol, nearbyPoints, node->left, level + 1);
+			searchHelper(target, distanceTol, nearbyPoints, node->right, level + 1);
 		}
 	}
 };
