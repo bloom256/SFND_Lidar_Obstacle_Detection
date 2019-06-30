@@ -35,6 +35,11 @@ std::vector<Car> initHighway(bool renderScene, pcl::visualization::PCLVisualizer
     return cars;
 }
 
+Color getRandomColor()
+{
+    return Color(std::abs(std::rand() % 100) / 100.0, std::abs(std::rand() % 100) / 100.0, std::abs(std::rand() % 100) / 100.0);
+}
+
 
 void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
 {
@@ -53,9 +58,17 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     //renderPointCloud(viewer, cloud, "");
     // TODO:: Create point processor
     ProcessPointClouds<pcl::PointXYZ> processor;
-    auto pair = processor.SegmentPlane(cloud, 100, 0.2);
+    auto pair = processor.SegmentPlane(cloud, 300, 0.2);
     renderPointCloud(viewer, pair.first, "road", Color(1, 0, 0));
-    renderPointCloud(viewer, pair.second, "other", Color(0, 1, 0));
+    renderPointCloud(viewer, pair.second, "not road", Color(0, 1, 0));
+
+    auto clusters = processor.Clustering(pair.second, 1.0, 3, 30);
+    for (size_t i = 0; i < clusters.size(); i++)
+    {
+        Color c = getRandomColor();
+        Box box = processor.BoundingBox(clusters[i]);
+        renderBox(viewer,box, i, c);
+    }
 }
 
 //setAngle: SWITCH CAMERA ANGLE {XY, TopDown, Side, FPS}
