@@ -6,6 +6,7 @@
 #include <chrono>
 #include <string>
 #include "kdtree.h"
+#include <unordered_set>
 
 // Arguments:
 // window is the region to draw box around
@@ -75,13 +76,38 @@ void render2DTree(Node* node, pcl::visualization::PCLVisualizer::Ptr& viewer, Bo
 
 }
 
+void buildCluster(const std::vector<std::vector<float>>& points, int id, std::unordered_set<int> & visited, KdTree* tree, std::vector<int> & cluster)
+{
+  if (visited.count(id))
+    return;
+  cluster.push_back(id);
+  visited.insert(id);
+  std::vector<int> nbrs = tree->search(points.at(id), 3);
+  for (int nbrId : nbrs)
+  {
+    if (visited.count(nbrId))
+      continue;
+    buildCluster(points, nbrId, visited, tree, cluster);
+  }
+}
+
 std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol)
 {
 
 	// TODO: Fill out this function to return list of indices for each cluster
 
 	std::vector<std::vector<int>> clusters;
+  std::unordered_set<int> visited;
+  for (int i = 0; i < points.size(); i++)
+  {
+    if (visited.count(i))
+      continue;
+    std::vector<int> cluster;
+    buildCluster(points, i, visited, tree, cluster);
+    clusters.push_back(cluster);
+  }
  
+  std::cout << "euclideanCluster: " << clusters.size() << " clusters found" << std::endl;
 	return clusters;
 
 }
@@ -110,7 +136,7 @@ int main ()
     	tree->insert(points[i],i); 
 
   	int it = 0;
-  	render2DTree(tree->root,viewer,window, it);
+  	//render2DTree(tree->root,viewer,window, it);
   
   	std::cout << "Test Search" << std::endl;
   	std::vector<int> nearby = tree->search({-6,7},3.0);
