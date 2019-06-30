@@ -40,6 +40,26 @@ Color getRandomColor()
     return Color(std::abs(std::rand() % 100) / 100.0, std::abs(std::rand() % 100) / 100.0, std::abs(std::rand() % 100) / 100.0);
 }
 
+void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer)
+{
+    ProcessPointClouds<pcl::PointXYZI> processor;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud = processor.loadPcd("../src/sensors/data/pcd/data_1/0000000000.pcd");
+    //renderPointCloud(viewer,cloud,"cloud");
+
+    cloud = processor.FilterCloud(cloud, 0.1, Eigen::Vector4f(-20, -30, -3, 1), Eigen::Vector4f(60, 30, 5, 1));
+
+    auto roadandOther = processor.SegmentPlane(cloud, 300, 0.2);
+    renderPointCloud(viewer, roadandOther.first, "road", Color(1, 0, 0));
+    renderPointCloud(viewer, roadandOther.second, "not road", Color(0, 1, 0));
+
+    // auto clusters = processor.Clustering(roadandOther.second, 1.0, 3, 30);
+    // for (size_t i = 0; i < clusters.size(); i++)
+    // {
+    //     Color c = getRandomColor();
+    //     Box box = processor.BoundingBox(clusters[i]);
+    //     renderBox(viewer,box, i, c);
+    // }
+}
 
 void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
 {
@@ -69,6 +89,7 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
         Box box = processor.BoundingBox(clusters[i]);
         renderBox(viewer,box, i, c);
     }
+    delete lidar;
 }
 
 //setAngle: SWITCH CAMERA ANGLE {XY, TopDown, Side, FPS}
@@ -102,7 +123,8 @@ int main (int argc, char** argv)
     pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
     CameraAngle setAngle = XY;
     initCamera(setAngle, viewer);
-    simpleHighway(viewer);
+    //simpleHighway(viewer);
+    cityBlock(viewer);
 
     while (!viewer->wasStopped ())
     {

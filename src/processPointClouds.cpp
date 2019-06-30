@@ -137,18 +137,46 @@ void ProcessPointClouds<PointT>::numPoints(typename pcl::PointCloud<PointT>::Ptr
 
 
 template<typename PointT>
-typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(typename pcl::PointCloud<PointT>::Ptr cloud, float filterRes, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint)
+typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(
+    typename pcl::PointCloud<PointT>::Ptr cloud,
+    float filterRes,
+    Eigen::Vector4f minPoint, 
+    Eigen::Vector4f maxPoint)
 {
     // Time segmentation process
     auto startTime = std::chrono::steady_clock::now();
 
-    // TODO:: Fill in the function to do voxel grid point reduction and region based filtering
+    pcl::CropBox<PointT> cropFilter; 
+    cropFilter.setInputCloud (cloud); 
+    cropFilter.setMin(minPoint); 
+    cropFilter.setMax(maxPoint); 
+    typename pcl::PointCloud<PointT>::Ptr cropped(new typename pcl::PointCloud<PointT>);
+    cropFilter.filter (*cropped); 
+
+    cropFilter.setInputCloud (cropped); 
+    cropFilter.setMin(Eigen::Vector4f(-1.5, -1.7, -1, 1)); 
+    cropFilter.setMax(Eigen::Vector4f(2.6, 1.7, -0.4, 1)); 
+    pcl::PointIndices::Ptr roof(new pcl::PointIndices);
+    cropFilter.filter (roof->indices); 
+
+    typename pcl::ExtractIndices<PointT> extract;    
+    extract.setInputCloud(cropped);
+    extract.setIndices(roof);
+    extract.setNegative(true);
+    typename pcl::PointCloud<PointT>::Ptr croppedNoRoof(new typename pcl::PointCloud<PointT>);
+    extract.filter(*croppedNoRoof);
+
+    typename pcl::VoxelGrid<PointT> vg;
+    vg.setInputCloud (croppedNoRoof);
+    vg.setLeafSize (filterRes, filterRes, filterRes);
+    typename pcl::PointCloud<PointT>::Ptr croppedNoRoofDownsampled(new typename pcl::PointCloud<PointT>);
+    vg.filter (*croppedNoRoofDownsampled);
 
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "filtering took " << elapsedTime.count() << " milliseconds" << std::endl;
 
-    return cloud;
+    return croppedNoRoofDownsampled;
 }
 
 template <typename PointT>
