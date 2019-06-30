@@ -62,6 +62,7 @@ namespace
         size_t currentPointIndex, 
         std::unordered_set<size_t> & visitedPoints,
         KdTree * tree, 
+        float distanceTol,
         int maxSize,
         typename pcl::PointCloud<PointT>::Ptr & cluster)
     {
@@ -75,13 +76,12 @@ namespace
         visitedPoints.insert(currentPointIndex);
 
         std::vector<float> searchPoint = { currPoint.x, currPoint.y, currPoint.z };
-        const float serachRadius = 3.0f;
-        std::vector<int> nbrIndices = tree->search(searchPoint, serachRadius);
+        std::vector<int> nbrIndices = tree->search(searchPoint, distanceTol);
         for (int nbrIndex : nbrIndices)
         {
             if (visitedPoints.count(nbrIndex))
                 continue;
-            buildCluster<PointT>(cloud, nbrIndex, visitedPoints, tree, maxSize, cluster);
+            buildCluster<PointT>(cloud, nbrIndex, visitedPoints, tree, distanceTol, maxSize, cluster);
         }
     }
 
@@ -111,7 +111,7 @@ namespace
                 continue;
         
             typename pcl::PointCloud<PointT>::Ptr cluster(new typename pcl::PointCloud<PointT>);
-            buildCluster<PointT>(cloud, i, visitedPoints, tree, maxSize, cluster);
+            buildCluster<PointT>(cloud, i, visitedPoints, tree, distanceTol, maxSize, cluster);
             if (cluster->points.size() >= minSize)
                 clusters.push_back(cluster);
         } 

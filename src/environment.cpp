@@ -46,19 +46,19 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer)
     pcl::PointCloud<pcl::PointXYZI>::Ptr cloud = processor.loadPcd("../src/sensors/data/pcd/data_1/0000000000.pcd");
     //renderPointCloud(viewer,cloud,"cloud");
 
-    cloud = processor.FilterCloud(cloud, 0.1, Eigen::Vector4f(-20, -30, -3, 1), Eigen::Vector4f(60, 30, 5, 1));
+    cloud = processor.FilterCloud(cloud, 0.1, Eigen::Vector4f(-10, -5, -3, 1), Eigen::Vector4f(30, 5, 5, 1));
 
-    auto roadandOther = processor.SegmentPlane(cloud, 300, 0.2);
-    renderPointCloud(viewer, roadandOther.first, "road", Color(1, 0, 0));
-    renderPointCloud(viewer, roadandOther.second, "not road", Color(0, 1, 0));
+    auto roadAndOther = processor.SegmentPlane(cloud, 300, 0.3);
+    renderPointCloud(viewer, roadAndOther.first, "road", Color(1, 0, 0));
+    renderPointCloud(viewer, roadAndOther.second, "not road", Color(0, 1, 0));
 
-    // auto clusters = processor.Clustering(roadandOther.second, 1.0, 3, 30);
-    // for (size_t i = 0; i < clusters.size(); i++)
-    // {
-    //     Color c = getRandomColor();
-    //     Box box = processor.BoundingBox(clusters[i]);
-    //     renderBox(viewer,box, i, c);
-    // }
+    auto clusters = processor.Clustering(roadAndOther.second, 0.3, 10, 10000);
+    for (size_t i = 0; i < clusters.size(); i++)
+    {
+        Color c = getRandomColor();
+        Box box = processor.BoundingBox(clusters[i]);
+        renderBox(viewer,box, i, c);
+    }
 }
 
 void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
